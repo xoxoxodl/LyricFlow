@@ -35,12 +35,21 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 2. API 인증 객체 생성
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+# 기존 sp = ... 부분을 지우고 이걸로 교체
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+
+# Streamlit 환경에서는 별도의 캐시 핸들러를 지정하지 않으면 서버 권한 문제로 멈출 수 있습니다.
+auth_manager = SpotifyOAuth(
     client_id=SPOTIPY_CLIENT_ID,
     client_secret=SPOTIPY_CLIENT_SECRET,
     redirect_uri=SPOTIPY_REDIRECT_URI,
-    scope="user-read-currently-playing"
-))
+    scope="user-read-currently-playing",
+    open_browser=False, # 서버에서는 브라우저를 열 수 없으므로 False
+    cache_path=None    # 서버에 .cache 파일을 남기지 않도록 설정
+)
+
+sp = spotipy.Spotify(auth_manager=auth_manager)
 
 genius = lyricsgenius.Genius(GENIUS_ACCESS_TOKEN)
 genius.remove_section_headers = True
