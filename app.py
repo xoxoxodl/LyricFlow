@@ -99,21 +99,21 @@ st.divider()
 if not is_authenticated():
     auth_manager = get_auth_manager()
     auth_url = auth_manager.get_authorize_url()
- 
+
     st.markdown("### Spotify 계정으로 시작하기")
     st.markdown(f"""
-        <a href="{auth_url}" target="_top">
-            <button style="
-                background-color: #1DB954; color: white;
-                border-radius: 25px; width: 100%; border: none;
-                font-weight: bold; padding: 14px; font-size: 16px;
-                cursor: pointer; margin-top: 10px;
-            ">
-                🎧 Spotify로 로그인
-            </button>
-        </a>
+        <button onclick="window.top.location.href='{auth_url}'" style="
+            background-color: #1DB954; color: white;
+            border-radius: 25px; width: 100%; border: none;
+            font-weight: bold; padding: 14px; font-size: 16px;
+            cursor: pointer; margin-top: 10px;
+        ">
+            🎧 Spotify로 로그인
+        </button>
     """, unsafe_allow_html=True)
-    st.stop()  # 인증 전엔 여기서 멈춤
+    st.stop()
+ 
+   
  
 # ─────────────────────────────────────────
 # 5. 인증 완료 후 메인 기능
