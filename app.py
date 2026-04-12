@@ -102,7 +102,7 @@ if not is_authenticated():
  
     st.markdown("### Spotify 계정으로 시작하기")
     st.markdown(f"""
-        <a href="{auth_url}" target="_self">
+        <a href="{auth_url}" target="_top">
             <button style="
                 background-color: #1DB954; color: white;
                 border-radius: 25px; width: 100%; border: none;
