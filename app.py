@@ -143,7 +143,12 @@ if st.button("지금 재생 중인 노래 분석하기"):
                 st.subheader(artists)
  
             with st.spinner("Claude가 가사의 서사를 분석 중입니다..."):
-                song = genius.search_song(track_name, artists)
+                try:
+                    song = genius.search_song(track_name, artists)
+                except Exception as e:
+                    st.error(f"Genius API 오류: {e}")
+                    st.error(f"토큰 확인: {GENIUS_ACCESS_TOKEN[:10] if GENIUS_ACCESS_TOKEN else '없음!'}")
+                    st.stop()
  
                 if song:
                     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
