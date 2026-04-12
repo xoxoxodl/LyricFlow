@@ -183,12 +183,10 @@ with st.sidebar:
     T = LANGUAGES[st.session_state.lang]
  
     if is_authenticated():
-        st.markdown(T["settings"])
-        if st.button(T["logout"]):
-            st.session_state.token_info = None
-            st.rerun()
-else:
-    T = LANGUAGES[st.session_state.lang]
+            st.markdown(T["settings"])
+            if st.button(T["logout"]):
+                st.session_state.token_info = None
+                st.rerun()
  
 # ─────────────────────────────────────────
 # 6. 메인 UI
