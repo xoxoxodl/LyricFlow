@@ -30,10 +30,98 @@ st.markdown("""
     """, unsafe_allow_html=True)
  
 # ─────────────────────────────────────────
-# 2. Spotify OAuth
+# 2. 언어 팩
+# ─────────────────────────────────────────
+LANGUAGES = {
+    "한국어": {
+        "flag": "🇰🇷",
+        "subtitle": "지금 듣는 노래의 가사를 분석하고, 무드가 이어지는 다음 곡을 추천합니다.",
+        "login_title": "### Spotify 계정으로 시작하기",
+        "login_btn": "🎧 Spotify로 로그인",
+        "analyze_btn": "지금 재생 중인 노래 분석하기",
+        "loading_track": "음악 정보를 가져오는 중...",
+        "loading_claude": "Claude가 가사의 서사를 분석 중입니다...",
+        "report_title": "### 📝 가사 감성 리포트",
+        "next_title": "### 💿 다음 Flow 추천곡",
+        "listen_btn": "🎧 들어보기",
+        "no_song": "현재 재생 중인 곡이 없습니다. Spotify를 확인해 주세요!",
+        "no_recs": "추천된 곡들을 Spotify에서 찾을 수 없습니다.",
+        "spotify_err": "Spotify 오류",
+        "claude_err": "Claude API 오류",
+        "logout": "로그아웃",
+        "settings": "### ⚙️ 설정",
+        "lang_label": "🌐 언어",
+        "prompt_lang": "한국어",
+    },
+    "English": {
+        "flag": "🇺🇸",
+        "subtitle": "Analyze the lyrics of your current song and find what flows next.",
+        "login_title": "### Get started with Spotify",
+        "login_btn": "🎧 Login with Spotify",
+        "analyze_btn": "Analyze Currently Playing",
+        "loading_track": "Fetching track info...",
+        "loading_claude": "Claude is analyzing the lyrics...",
+        "report_title": "### 📝 Lyric Sentiment Report",
+        "next_title": "### 💿 Next Flow Picks",
+        "listen_btn": "🎧 Listen",
+        "no_song": "No song is currently playing. Check your Spotify!",
+        "no_recs": "Could not find recommended songs on Spotify.",
+        "spotify_err": "Spotify error",
+        "claude_err": "Claude API error",
+        "logout": "Logout",
+        "settings": "### ⚙️ Settings",
+        "lang_label": "🌐 Language",
+        "prompt_lang": "English",
+    },
+    "中文": {
+        "flag": "🇨🇳",
+        "subtitle": "分析正在播放的歌曲歌词，推荐情感相似的下一首歌。",
+        "login_title": "### 使用 Spotify 账号开始",
+        "login_btn": "🎧 使用 Spotify 登录",
+        "analyze_btn": "分析当前播放的歌曲",
+        "loading_track": "正在获取音乐信息...",
+        "loading_claude": "Claude 正在分析歌词...",
+        "report_title": "### 📝 歌词情感报告",
+        "next_title": "### 💿 下一首推荐",
+        "listen_btn": "🎧 试听",
+        "no_song": "当前没有正在播放的歌曲，请检查 Spotify！",
+        "no_recs": "在 Spotify 上找不到推荐的歌曲。",
+        "spotify_err": "Spotify 错误",
+        "claude_err": "Claude API 错误",
+        "logout": "退出登录",
+        "settings": "### ⚙️ 设置",
+        "lang_label": "🌐 语言",
+        "prompt_lang": "中文",
+    },
+    "日本語": {
+        "flag": "🇯🇵",
+        "subtitle": "再生中の曲の歌詞を分析し、似た雰囲気の次の曲を提案します。",
+        "login_title": "### Spotify アカウントで始める",
+        "login_btn": "🎧 Spotify でログイン",
+        "analyze_btn": "再生中の曲を分析する",
+        "loading_track": "音楽情報を取得中...",
+        "loading_claude": "Claude が歌詞を分析中です...",
+        "report_title": "### 📝 歌詞センチメントレポート",
+        "next_title": "### 💿 次のおすすめ曲",
+        "listen_btn": "🎧 聴いてみる",
+        "no_song": "現在再生中の曲がありません。Spotify を確認してください！",
+        "no_recs": "Spotify でおすすめの曲が見つかりませんでした。",
+        "spotify_err": "Spotify エラー",
+        "claude_err": "Claude API エラー",
+        "logout": "ログアウト",
+        "settings": "### ⚙️ 設定",
+        "lang_label": "🌐 言語",
+        "prompt_lang": "日本語",
+    },
+}
+ 
+# ─────────────────────────────────────────
+# 3. Spotify OAuth
 # ─────────────────────────────────────────
 if "token_info" not in st.session_state:
     st.session_state.token_info = None
+if "lang" not in st.session_state:
+    st.session_state.lang = "한국어"
  
 def get_auth_manager():
     return SpotifyOAuth(
@@ -65,7 +153,7 @@ def get_spotify_client():
     return spotipy.Spotify(auth_manager=get_auth_manager())
  
 # ─────────────────────────────────────────
-# 3. OAuth 콜백 처리
+# 4. OAuth 콜백 처리
 # ─────────────────────────────────────────
 code = st.query_params.get("code")
 if code and not is_authenticated():
@@ -79,37 +167,55 @@ if code and not is_authenticated():
         st.error(f"로그인 처리 중 오류: {e}")
  
 # ─────────────────────────────────────────
-# 4. 메인 UI
+# 5. 사이드바 (언어 선택 + 로그아웃)
+# ─────────────────────────────────────────
+with st.sidebar:
+    # 언어 선택 — 인증 여부 상관없이 항상 표시
+    lang_options = list(LANGUAGES.keys())
+    lang_display = [f"{LANGUAGES[l]['flag']} {l}" for l in lang_options]
+    selected_idx = st.selectbox(
+        "🌐 Language / 언어",
+        range(len(lang_options)),
+        format_func=lambda i: lang_display[i],
+        index=lang_options.index(st.session_state.lang),
+    )
+    st.session_state.lang = lang_options[selected_idx]
+    T = LANGUAGES[st.session_state.lang]
+ 
+    if is_authenticated():
+        st.markdown(T["settings"])
+        if st.button(T["logout"]):
+            st.session_state.token_info = None
+            st.rerun()
+else:
+    T = LANGUAGES[st.session_state.lang]
+ 
+# ─────────────────────────────────────────
+# 6. 메인 UI
 # ─────────────────────────────────────────
 st.title("🎵 LyricFlow")
-st.write("지금 듣는 노래의 가사를 분석하고, 무드가 이어지는 다음 곡을 추천합니다.")
+st.write(T["subtitle"])
 st.divider()
  
 # 미인증 상태: 로그인 버튼
 if not is_authenticated():
     auth_manager = get_auth_manager()
     auth_url = auth_manager.get_authorize_url()
-    st.markdown("### Spotify 계정으로 시작하기")
-    st.link_button("🎧 Spotify로 로그인", auth_url, use_container_width=True)
+    st.markdown(T["login_title"])
+    st.link_button(T["login_btn"], auth_url, use_container_width=True)
     st.stop()
  
 # ─────────────────────────────────────────
-# 5. 인증 완료 후 메인 기능
+# 7. 인증 완료 후 메인 기능
 # ─────────────────────────────────────────
 sp = get_spotify_client()
  
-with st.sidebar:
-    st.markdown("### ⚙️ 설정")
-    if st.button("로그아웃"):
-        st.session_state.token_info = None
-        st.rerun()
- 
-if st.button("지금 재생 중인 노래 분석하기"):
-    with st.spinner("음악 정보를 가져오는 중..."):
+if st.button(T["analyze_btn"]):
+    with st.spinner(T["loading_track"]):
         try:
             current_playing = sp.current_user_playing_track()
         except spotipy.SpotifyException as e:
-            st.error(f"Spotify 오류: {e}")
+            st.error(f"{T['spotify_err']}: {e}")
             st.stop()
  
         if current_playing and current_playing.get("item"):
@@ -125,29 +231,29 @@ if st.button("지금 재생 중인 노래 분석하기"):
                 st.header(track_name)
                 st.subheader(artists)
  
-            # ── Claude가 직접 분석 (가사 API 불필요) ──
-            with st.spinner("Claude가 가사의 서사를 분석 중입니다..."):
+            with st.spinner(T["loading_claude"]):
                 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
  
-                prompt = f"""당신은 음악 가사 분석 전문가입니다.
-아래 노래의 가사를 당신의 지식을 바탕으로 분석해 주세요.
-가사를 직접 인용하지 말고, 주제와 감정선, 서사를 분석해 주세요.
+                prompt = f"""You are a music lyrics analysis expert. Please respond entirely in {T['prompt_lang']}.
  
-곡 제목: {track_name}
-아티스트: {artists}
+Analyze the following song based on your knowledge of its lyrics.
+Do NOT quote lyrics directly. Instead, analyze the themes, emotions, and narrative.
  
-지시사항:
-- 요약: 가사의 주제와 감정선을 3줄로 요약해 주세요. (제목이나 번호 생략)
-- 키워드: 이 곡의 분위기를 나타내는 키워드 3~5개를 콤마로 구분해서 뽑아주세요.
-- 추천: 이 곡과 가사의 서사나 감정선이 이어지는 추천곡 '3곡'을 제안해 주세요.
-  (같은 아티스트나 같은 시대 곡 말고, 가사의 내용과 감정이 비슷한 곡으로 추천해 주세요.)
+Song title: {track_name}
+Artist: {artists}
  
-출력 형식 (반드시 지킬 것):
-요약: [내용]
-키워드: [키워드1, 키워드2, 키워드3]
-추천1: [곡 제목 - 아티스트] | [이유]
-추천2: [곡 제목 - 아티스트] | [이유]
-추천3: [곡 제목 - 아티스트] | [이유]"""
+Instructions:
+- Summary: Summarize the theme and emotional arc in 3 sentences.
+- Keywords: Extract 3-5 keywords representing the mood, separated by commas.
+- Recommendations: Suggest 3 songs with similar lyrical narrative or emotional tone.
+  (Avoid recommending songs by the same artist or from the same era — focus on lyrical and emotional similarity.)
+ 
+Output format (strictly follow this):
+요약: [content]
+키워드: [keyword1, keyword2, keyword3]
+추천1: [Song title - Artist] | [reason]
+추천2: [Song title - Artist] | [reason]
+추천3: [Song title - Artist] | [reason]"""
  
                 try:
                     message = client.messages.create(
@@ -158,7 +264,7 @@ if st.button("지금 재생 중인 노래 분석하기"):
                     )
                     full_response = message.content[0].text
                 except Exception as e:
-                    st.error(f"Claude API 오류: {e}")
+                    st.error(f"{T['claude_err']}: {e}")
                     st.stop()
  
                 # 파싱
@@ -171,7 +277,7 @@ if st.button("지금 재생 중인 노래 분석하기"):
                     keywords = []
  
                 st.divider()
-                st.markdown("### 📝 가사 감성 리포트")
+                st.markdown(T["report_title"])
                 st.info(summary_part)
  
                 if keywords:
@@ -184,9 +290,8 @@ if st.button("지금 재생 중인 노래 분석하기"):
                     st.markdown(kw_html, unsafe_allow_html=True)
                     st.write("")
  
-                # 추천곡 처리
                 st.divider()
-                st.markdown("### 💿 다음 Flow 추천곡")
+                st.markdown(T["next_title"])
  
                 recommendations_raw = []
                 for i in range(1, 4):
@@ -227,10 +332,10 @@ if st.button("지금 재생 중인 노래 분석하기"):
                             st.image(rec["img"], use_container_width=True)
                             st.success(f"**{rec['name']}**\n\n{rec['artist']}")
                             st.caption(rec["reason"])
-                            st.link_button("🎧 들어보기", rec["url"])
+                            st.link_button(T["listen_btn"], rec["url"])
                 else:
-                    st.warning("추천된 곡들을 Spotify에서 찾을 수 없습니다.")
+                    st.warning(T["no_recs"])
         else:
-            st.warning("현재 재생 중인 곡이 없습니다. Spotify를 확인해 주세요!")
+            st.warning(T["no_song"])
  
-st.caption("LyricFlow v1.3 | Developed by Tay Kim | Model: claude-sonnet-4-6")
+st.caption("LyricFlow v1.4 | Developed by Tay Kim | Model: claude-sonnet-4-6")
